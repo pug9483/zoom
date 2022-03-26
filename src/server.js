@@ -1,6 +1,7 @@
 import http from "http";
-import WebSocket from "ws";
+import SocketIO from "socket.io";
 import express from "express";
+// import WebSocket from "ws";
 
 const app = express();
 
@@ -10,20 +11,33 @@ app.use("/public", express.static(__dirname + "/public"));
 app.get("/", (req, res) => res.render("home"));
 app.get("/*", (req, res) => res.redirect("/"));
 
-const handleListen = () => console.log(`Listening on http://localhost:3000`);
-
 //Http 서버
-const server = http.createServer(app);
+const httpServer = http.createServer(app);
 
-//WebSocket 서버
-const wss = new WebSocket.Server({ server });
-
-wss.on("connection", (socket) => {
-  console.log("Connected to Browser✅");
-  socket.on("close", () => {
-    console.log("Disconnected from the Browser❌");
+//socket.io을 이용하여 io서버 만들기
+const wsServer = SocketIO(httpServer);
+wsServer.on("connection", (socket) => {
+  socket["nickname"] = "Anony";
+  socket.onAny((event) => {
+    console.log(`Socket Event : ${event}`);
   });
-  socket.send("hello!!");
+  socket.on("enter_room", (roomName, done) => {
+    socket.join(roomName);
+    done();
+    socket.to(roomName).emit("welcome", socket.nickname);
+  });
+  socket.on("disconnecting", () => {
+    socket.rooms.forEach((room) =>
+      socket.to(room).emit("bye", socket.nickname)
+    );
+  });
+  socket.on("new_message", (msg, room, done) => {
+    socket.to(room).emit("new_message", `${socket.nickname}: ${msg}`);
+    done();
+  });
+  socket.on("nickname", (nickname) => (socket["nickname"] = nickname));
 });
 
-server.listen(3000, handleListen);
+httpServer.listen(3000, () =>
+  console.log(`Listening on http://localhost:3000✅`)
+);
