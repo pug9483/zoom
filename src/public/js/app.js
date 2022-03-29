@@ -1,8 +1,9 @@
 const socket = io();
 
 const room = document.getElementById("room");
-const welcomeForm = document.getElementById("welcome");
+const welcome = document.getElementById("welcome");
 const nameForm = document.getElementById("nameForm");
+const welcomeForm = document.querySelector("#welcome form");
 room.hidden = true;
 
 let roomName;
@@ -24,11 +25,12 @@ function handleMessageSubmit(event) {
   input.value = "";
 }
 
+function countRoom(roomName) {
+  WebSocketServer.sockets.ada;
+}
 function showRoom() {
-  welcomeForm.hidden = true;
-  nameForm.hidden = true;
+  welcome.hidden = true;
   room.hidden = false;
-
   const h3 = room.querySelector("h3");
   h3.innerText = `Room: ${roomName}`;
   const msgForm = room.querySelector("#msg");
@@ -58,12 +60,29 @@ welcomeForm.addEventListener("submit", (event) => {
   }
 });
 
-socket.on("welcome", (user) => {
+socket.on("welcome", (user, newCount) => {
+  const h3 = room.querySelector("h3");
+  h3.innerText = `Room ${roomName} (${newCount})`;
   addMessage(`${user} joined`);
 });
 
-socket.on("bye", (user) => {
+socket.on("bye", (user, newCount) => {
+  const h3 = room.querySelector("h3");
+  h3.innerText = `Room ${roomName} (${newCount})`;
   addMessage(`${user} left`);
 });
 
 socket.on("new_message", addMessage);
+
+socket.on("room_change", (rooms) => {
+  const roomList = welcome.querySelector("ul");
+  roomList.innerHTML = "";
+  if (rooms.length === 0) {
+    return;
+  }
+  rooms.forEach((room) => {
+    const li = document.createElement("li");
+    li.innerText = room;
+    roomList.append(li);
+  });
+});
